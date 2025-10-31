@@ -17,7 +17,8 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
+# Removed webdriver_manager import - Selenium 4.6+ handles this automatically
+# from webdriver_manager.chrome import ChromeDriverManager
 
 
 class BereaRegistrationBot:
@@ -140,9 +141,12 @@ REGISTRATION_DATE=2025-11-05
 
 
             print("Initializing Chrome driver...")
+            # --- FIX 1: Use Selenium's built-in driver manager ---
             # This line automatically downloads and manages the correct chromedriver
-            service = Service(ChromeDriverManager().install())
+            # service = Service(ChromeDriverManager().install()) # This is the old, broken line
+            service = Service() # This lets Selenium 4.6+ manage the driver
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            # --- End Fix 1 ---
 
             if self.config['THROTTLE_SPEED']:
                 reg_date = self.config['REGISTRATION_DATE']
@@ -216,7 +220,7 @@ REGISTRATION_DATE=2025-11-05
 
         self.scheduler_window.mainloop()
 
-    def wait_for_server_ready(self, target_time_local, poll_frequency=0.01, timeout=300):
+    def wait_for_server_ready(self, target_time_local, poll_frequency=0.1, timeout=300):
         """
         Wait until the server's reported time (via its Date header) reaches or exceeds the target time.
         """
@@ -394,9 +398,6 @@ REGISTRATION_DATE=2025-11-05
         self.start_time_btn.config(state='disabled')
         self.start_now_btn.config(state='disabled')
 
-        # --- THIS IS THE FIX ---
-        # We set the *first* status message here, on the main thread,
-        # *before* the new thread even starts.
         self.status_var.set("Starting browser...")
         self.scheduler_window.update_idletasks()  # Force GUI to update now
 
@@ -418,27 +419,83 @@ REGISTRATION_DATE=2025-11-05
                 if not self.enter_pin_only():
                     raise Exception("Entering PIN failed.")
 
+                # --- START: New "Poll-and-Sleep" Logic ---
                 if target_time:
                     self._update_status_safe(f"Waiting for {target_time.strftime('%H:%M:%S')}...")
+                    logging.info(f"Target local time set for: {target_time}")
 
-                    while datetime.now() < target_time:
-                        time.sleep(0.01)  # Don't update GUI in a hot loop
+                    # 1. Polite Polling Logic
+                    FINAL_POLL_BUFFER_SECONDS = 25.0  # Poll-twice logic buffer
+                    target_minus_buffer = target_time - timedelta(seconds=FINAL_POLL_BUFFER_SECONDS)
 
-                    self._update_status_safe("Local time reached. Syncing with server...")
+                    now = datetime.now()
+                    while now < target_minus_buffer:
+                        remaining = (target_minus_buffer - now).total_seconds()
 
-                    if not self.wait_for_server_ready(target_time):
-                        raise Exception("Server did not reach target time.")
+                        # Determine sleep duration based on remaining time
+                        if remaining > 30:
+                            sleep_duration = 30  # Poll every 30s
+                            self._update_status_safe(f"Waiting... (T-{remaining:.0f}s)")
+                        elif remaining > 5:
+                            sleep_duration = 5   # Poll every 5s
+                            self._update_status_safe(f"Waiting... (T-{remaining:.0f}s)")
+                        else:
+                            sleep_duration = 0.5 # Poll every 0.5s in the last few seconds
 
-                    dynamic_buffer = 2.0  # Set a fixed buffer for testing
-                    logging.info(f"Waiting for dynamic buffer: {dynamic_buffer:.3f} sec")
-                    time.sleep(dynamic_buffer)
+                        time.sleep(sleep_duration)
+                        now = datetime.now()
+
+                    # 2. "Poll Twice" (Final Poll)
+                    self._update_status_safe(f"Final sync (T-{FINAL_POLL_BUFFER_SECONDS}s)...")
+                    logging.info(f"Reached T-{FINAL_POLL_BUFFER_SECONDS}s. Polling server for final time sync.")
+
+                    try:
+                        # Get server time *once* to calculate offset
+                        response = requests.head(self.BEREA_TERM_URL)
+                        date_header = response.headers.get("Date")
+                        if not date_header:
+                            raise Exception("No Date header found in server response.")
+
+                        server_time_utc = datetime.strptime(date_header, "%a, %d %b %Y %H:%M:%S GMT").replace(tzinfo=pytz.utc)
+                        local_utc_now = datetime.now(timezone.utc)
+                        offset_seconds = (server_time_utc - local_utc_now).total_seconds()
+
+                        logging.info(f"Server time offset: {offset_seconds:.3f} seconds.")
+
+                        # Convert local target time to UTC
+                        local_tz = pytz.timezone(self.LOCAL_TIMEZONE)
+                        target_time_with_tz = local_tz.localize(target_time)
+                        target_time_utc = target_time_with_tz.astimezone(pytz.utc)
+
+                        # Determine the *local* UTC time we need to submit at
+                        # (This is the target server time, adjusted by the offset)
+                        target_local_time_as_utc = target_time_utc - timedelta(seconds=offset_seconds)
+
+                        # 3. "Add a Delay" (Final Local Sleep)
+                        remaining_sleep_seconds = (target_local_time_as_utc - datetime.now(timezone.utc)).total_seconds()
+
+                        if remaining_sleep_seconds > 0:
+                            logging.info(f"Calculated final sleep: {remaining_sleep_seconds:.4f} seconds.")
+                            self._update_status_safe(f"Final sleep: {remaining_sleep_seconds:.3f}s")
+                            time.sleep(remaining_sleep_seconds)
+                        else:
+                            logging.warning(f"Offset calculation resulted in zero/negative sleep ({remaining_sleep_seconds:.4f}s). Submitting immediately.")
+
+                    except Exception as e:
+                        logging.error(f"Final server time sync failed: {e}. Proceeding with local time.")
+                        # Fallback: just sleep until the local target time
+                        remaining_local_sleep = (target_time - datetime.now()).total_seconds()
+                        if remaining_local_sleep > 0:
+                            time.sleep(remaining_local_sleep)
 
                     self._update_status_safe("Submitting PIN...")
                     self.submit_pin_form()
                     self.log_submission_times()
                 else:
+                    # This is the "Start Immediately" logic
                     self._update_status_safe("Submitting PIN...")
                     self.submit_pin_form()
+                # --- END: New "Poll-and-Sleep" Logic ---
 
                 self._update_status_safe("Entering CRNs...")
                 if not self.enter_crns():
@@ -585,31 +642,44 @@ REGISTRATION_DATE=2025-11-05
             logging.error(f"Login failed: {e}")
             return False
 
+    # --- FIX 2: Replaced with the robust DUO auth logic ---
     def handle_duo_auth(self):
         try:
-            logging.info("Starting DUO authentication process... Please approve on your device.")
+            logging.info("Starting DUO authentication process...")
 
-            # Wait for the DUO iframe to appear
-            self.wait.until(
-                EC.presence_of_element_located((By.ID, "duo_iframe")))
+            # Initial wait for any DUO-related content
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "#duo_iframe, .device-health-check, .card--white-label")))
 
-            logging.info("DUO iframe loaded. Waiting for user authentication...")
+            # Wait for term selector with periodic checks
+            success = False
+            timeout = time.time() + 300  # 5 minute timeout
 
-            # Now, wait for the *result* of DUO auth, which is the term selector page
-            # We give this a long timeout (5 minutes) for the user to find their phone
-            WebDriverWait(self.driver, 300).until(
-                EC.presence_of_element_located((By.ID, "s2id_txt_term"))
-            )
+            while time.time() < timeout and not success:
+                try:
+                    # Check if we've reached the term selector
+                    term_selector = self.driver.find_element(By.ID, "s2id_txt_term")
+                    if term_selector.is_displayed():
+                        success = True
+                        break
+                except:
+                    # Still in DUO process
+                    time.sleep(2)
+                    continue
 
-            logging.info("DUO authentication completed successfully.")
+            if not success:
+                raise Exception("DUO authentication timed out")
+
+            logging.info("DUO authentication completed successfully")
+            time.sleep(2)  # Brief pause after completion
             return True
 
-        except TimeoutException:
-            logging.error("DUO authentication timed out (5 minute limit).")
-            return False
         except Exception as e:
             logging.error(f"DUO authentication failed: {str(e)}")
+
             return False
+    # --- End Fix 2 ---
 
     def select_term(self):
         try:
