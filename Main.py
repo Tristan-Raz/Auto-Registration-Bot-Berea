@@ -268,11 +268,11 @@ REGISTRATION_DATE=2025-11-05
                 time.sleep(poll_frequency)
 
             logging.warning("Timeout reached while waiting for server time.")
-            return False
+
 
         except Exception as e:
             logging.error(f"Error in wait_for_server_ready: {e}")
-            return False
+
 
     def calibrate_dynamic_buffer(self, num_trials=1, margin=0.05, min_buffer=0.5, max_buffer=1):
         """
@@ -613,7 +613,7 @@ REGISTRATION_DATE=2025-11-05
 
         except Exception as e:
             logging.error(f"CRN entry failed: {str(e)}")
-            return False
+
 
     def login(self):
         try:
@@ -708,7 +708,7 @@ REGISTRATION_DATE=2025-11-05
 
         except Exception as e:
             logging.error(f"Term selection failed: {str(e)}")
-            return False
+
 
     def submit_pin_form(self):
         try:
@@ -732,7 +732,7 @@ REGISTRATION_DATE=2025-11-05
             return True
         except Exception as e:
             logging.error(f"Failed to submit PIN form: {e}")
-            return False
+
 
     def enter_pin_only(self):
         try:
@@ -745,7 +745,7 @@ REGISTRATION_DATE=2025-11-05
 
         except Exception as e:
             logging.error(f"PIN entry failed: {str(e)}")
-            return False
+
 
     def submit_registration(self):
         try:
@@ -758,14 +758,14 @@ REGISTRATION_DATE=2025-11-05
 
             if not self.verify_registration():
                 logging.error("Registration verification failed.")
-                return False
+
 
             logging.info("Registration appears successful.")
             return True
 
         except Exception as e:
             logging.error(f"Submission failed: {str(e)}")
-            return False
+
 
     def verify_registration(self):
         """Fast verification with immediate notification handling"""
@@ -778,7 +778,7 @@ REGISTRATION_DATE=2025-11-05
                 if error_notification:
                     error_text = error_notification.text
                     logging.error(f"Registration error notification detected: {error_text}")
-                    return False
+
             except TimeoutException:
                 pass  # No error notification, good.
 
@@ -809,14 +809,14 @@ REGISTRATION_DATE=2025-11-05
 
             if not missing_crns:
                 logging.info("All submitted CRNs found with 'Registered' status.")
-                return True
+
             else:
                 logging.warning(f"Missing registered CRNs: {missing_crns}")
-                return False
+
 
         except Exception as e:
             logging.error(f"Verification failed: {str(e)}")
-            return False
+
 
 
 def main():
