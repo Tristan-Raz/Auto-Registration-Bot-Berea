@@ -519,6 +519,8 @@ REGISTRATION_DATE=2025-11-05
             finally:
                 self._reenable_buttons_safe()
                 if self.driver:
+                    logging.info("Registration thread finished. Waiting 30 seconds before closing browser...")
+                    time.sleep(600)  # <-- ADDED DELAY to 10 minutes for user to inspect results.
                     self.driver.quit()
                     self.driver = None
 
