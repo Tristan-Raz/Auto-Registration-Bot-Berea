@@ -595,8 +595,6 @@ REGISTRATION_DATE=2025-11-05
 
     def enter_crns(self):
         try:
-            self.wait.until(EC.element_to_be_clickable((By.ID, "enterCRNs-tab"))).click()
-            self.wait.until(EC.presence_of_element_located((By.ID, "txt_crn1")))
             add_button = self.wait.until(EC.element_to_be_clickable((By.ID, "addAnotherCRN")))
 
             for i in range(len(self.crns) - 1):
@@ -731,6 +729,17 @@ REGISTRATION_DATE=2025-11-05
             except TimeoutException:
                 logging.info("No notification popup after PIN submit. Proceeding.")
 
+            logging.info("Waiting for CRN entry page to load...")
+
+            # 1. Wait for the tab to be clickable and click it
+            crn_tab = self.wait.until(EC.element_to_be_clickable((By.ID, "enterCRNs-tab")))
+            crn_tab.click()
+
+            # 2. Wait for the *content* of that tab (the first CRN box) to be present.
+            # This makes it bulletproof.
+            self.wait.until(EC.presence_of_element_located((By.ID, "txt_crn1")))
+
+            logging.info("CRN entry page is loaded and ready.")
             return True
         except Exception as e:
             logging.error(f"Failed to submit PIN form: {e}")
