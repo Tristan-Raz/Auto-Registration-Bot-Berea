@@ -6,6 +6,7 @@
 ## For Most Users (Easy Install)s
 
 If you just want to use the bot and don't want to code, this is for you.
+
 [![Auto Register Youtube Video](https://img.youtube.com/vi/W8HPJDqJKtA/0.jpg)](https://www.youtube.com/watch?v=W8HPJDqJKtA)
 
 1.  Go to the **[Releases Page](https://github.com/Tristan-Raz/Auto-Registration-Bot-Berea/releases)**.
