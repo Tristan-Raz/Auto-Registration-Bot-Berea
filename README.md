@@ -1,9 +1,9 @@
 # QuikRegist Pro
-![License: GPL v3](https://img.shields.svg.io/badge/License-GPLv3-blue.svg)
+[![License: GPL v3](https://img.shields.svg.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 
 ***
 
-## For Most Users (Easy Install)
+## For Most Users (Easy Install)s
 
 If you just want to use the bot and don't want to code, this is for you.
 
