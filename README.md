@@ -3,7 +3,7 @@
 
 ***
 
-## For Most Users (Easy Install)s
+## For Most Users (Easy Install)
 
 If you just want to use the bot and don't want to code, this is for you.
 
