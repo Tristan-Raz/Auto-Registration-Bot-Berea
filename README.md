@@ -1,6 +1,21 @@
 # QuikRegist Pro
 ![License: GPL v3](https://img.shields.svg.io/badge/License-GPLv3-blue.svg)
 
+***
+
+## For Most Users (Easy Install)
+
+If you just want to use the bot and don't want to code, this is for you.
+
+1.  Go to the **[Releases Page](https://github.com/Tristan-Raz/Auto-Registration-Bot-Berea/releases)**.
+2.  Download the `.zip` file from the latest release (e.g., `BereaBot_v1.0.1.zip`).
+3.  Unzip the folder.
+4.  **IMPORTANT:** Leave the `.exe` file **inside** the folder it came in. Do not move it to your desktop by itself. It needs the other files in that folder to work.
+5.  Run the `.exe` file (e.g., `BereaBot.exe`). The bot will start and create the `config.txt` and `crns.txt` files for you *inside that same folder*.
+6.  Skip to the **"Setup (CRITICAL First-Time Run)"** section below to configure the bot.
+
+***
+
 This is a registration bot I built to help level the playing field for class registration at Berea College. It's designed to be fast, reliable, and fair.
 
 ## CRITICAL DISCLAIMER
@@ -67,9 +82,7 @@ You have to configure the bot before you can use it.
 4.  **Edit `crns.txt`:** Open it and add your CRNs, one per line.
     ```
     # Add your 5-digit CRNs below, one per line.
-    # Example:
-    # 12345
-    # 67890
+    #Example:
     11111
     22222
     33333
@@ -82,8 +95,8 @@ You have to configure the bot before you can use it.
     PIN=your_pin_here
     
     # --- Term Information ---
-    TERM_ID=202510
-    TERM_TEXT=Fall 2025
+    TERM_ID=202512
+    TERM_TEXT=Spring 2026
     
     # --- Bot Settings ---
     HEADLESS=false
