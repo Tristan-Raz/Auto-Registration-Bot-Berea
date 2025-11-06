@@ -716,18 +716,19 @@ REGISTRATION_DATE=2025-11-05
             term_go.click()
             logging.info("PIN form submitted successfully")
 
-            # Handle the notification that *sometimes* appears
-            try:
-                notification_buttons = WebDriverWait(self.driver, 2).until(
-                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, "button.notification-flyout-item.primary"))
-                )
-                if notification_buttons:
-                    ok_button = notification_buttons[0]
-                    if ok_button.is_displayed() and ok_button.is_enabled():
-                        logging.info("Dismissing 'You are registered' notification.")
-                        ok_button.click()
-            except TimeoutException:
-                logging.info("No notification popup after PIN submit. Proceeding.")
+            # Handle the notification that *sometimes* appears 
+            # FOR DEVELOPMENT ONLY!!!!!
+            # try:
+            #     notification_buttons = WebDriverWait(self.driver, 2).until(
+            #         EC.presence_of_all_elements_located((By.CSS_SELECTOR, "button.notification-flyout-item.primary"))
+            #     )
+            #     if notification_buttons:
+            #         ok_button = notification_buttons[0]
+            #         if ok_button.is_displayed() and ok_button.is_enabled():
+            #             logging.info("Dismissing 'You are registered' notification.")
+            #             ok_button.click()
+            # except TimeoutException:
+            #     logging.info("No notification popup after PIN submit. Proceeding.")
 
             logging.info("Waiting for CRN entry page to load...")
 
